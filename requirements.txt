@@ -1,0 +1,7 @@
+pandas
+black
+aiohttp
+
+ipykernel
+jupyter
+jupyterlab

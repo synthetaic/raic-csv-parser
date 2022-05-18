@@ -1,47 +1,115 @@
+import argparse
+import asyncio
+import csv
+import json
 import os
 import subprocess
-import csv
+from itertools import repeat
+from pathlib import Path, PurePath
+from typing import Any, Dict, List, Tuple
+from uuid import uuid4
+
 import pandas as pd
-import argparse
+import requests
+from aiohttp import ClientSession
 
-#extract SaaS key from CSV file
-def getSAASkey(csvFile):
-    with open(csvFile, newline='') as f:
+
+async def http_get_with_aiohttp(
+    session: ClientSession,
+    url: str,
+    sas: str,
+    headers: Dict = {},
+    proxy: str = None,
+    timeout: int = 10,
+) -> bytes:
+
+    response = await session.get(
+        url=url + sas, headers=headers, proxy=proxy, timeout=timeout
+    )
+    content = None
+    try:
+        content = await response.read()
+    except:
+        pass
+    return content
+
+
+async def http_get_with_aiohttp_parallel(
+    session: ClientSession,
+    list_of_urls: List[str],
+    sas: str,
+    headers: Dict = {},
+    proxy: str = None,
+    timeout: int = 10,
+) -> List[bytes]:
+
+    results = await asyncio.gather(
+        *[
+            http_get_with_aiohttp(session, url, sas, headers, proxy, timeout)
+            for url in list_of_urls
+        ]
+    )
+    return results
+
+
+def getSAASkey(csvFile: str) -> str:
+    with open(csvFile, newline="") as f:
         reader = csv.reader(f)
-        SaaSkey = next(reader)[1]  # gets the SaaS key from first row of the CSV file
-    return SaaSkey    
+        SaaSkey = next(reader)[1]
+    return SaaSkey
 
-#get images from RAIC
-def RAICcsv2Files(csvFile,outDir):
-    SASkey=getSAASkey(csvFile)
-    df=pd.read_csv(csvFile,skiprows=1) 
-    i=0
+
+def main(args) -> None:
+    csvFile = args.input
+    outDir = args.outdir
+    isImagery = args.image
+
+    SASkey = getSAASkey(csvFile)
+    df = pd.read_csv(csvFile, skiprows=1)
+
+
+
+
+
+
     for index, row in df.iterrows():
         try:
-            file_path = (os.path.join(outDir,str(row['category'])))
+            file_path = os.path.join(outDir, str(row["category"]))
             if not os.path.exists(file_path):
-                    os.makedirs(file_path)
-            full_link = ('"'+row['url'] + SASkey + '"')
-            processcmd="azcopy cp "+full_link+" "+file_path
-            #print(processcmd)
+                os.makedirs(file_path)
+            full_link = '"' + row["url"] + SASkey + '"'
+            processcmd = "azcopy cp " + full_link + " " + file_path
             transfer = subprocess.call(processcmd, stderr=subprocess.STDOUT)
-            #rename image in case they are same
-            downloadedName=str(row['url']).split('/')[len(str(row['url']).split('/'))-1]
-            newName="image_"+str(i)+".jpg"
-            os.rename(os.path.join(file_path,downloadedName), os.path.join(file_path,newName))
+            downloadedName = str(row["url"]).split("/")[
+                len(str(row["url"]).split("/")) - 1
+            ]
+            newName = "image_" + str(i) + ".jpg"
+            os.rename(
+                os.path.join(file_path, downloadedName),
+                os.path.join(file_path, newName),
+            )
         except EOFError as error:
-            #Output for EOF error, would be caused by missing SAS
-            print('Error with SAS')
+            print("Error with SAS")
         except Exception as e:
-            #When an unexpected error has occured.
-            print(str(e) + 'Unknown error has occured')
-        i+=1
+            print(str(e) + "Unknown error has occured")
+        i += 1
 
-parser = argparse.ArgumentParser()
-   
-parser.add_argument('-i', '--input',  required=True, help="CSV file downloaded from RAIC portal")
-parser.add_argument('-o', '--outdir', required=True , help="output directory for downlaoded images")
 
-args = parser.parse_args()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
 
-RAICcsv2Files(args.input,args.outdir)
+    parser.add_argument(
+        "-i", "--input", required=True, help="CSV file downloaded from RAIC portal"
+    )
+    parser.add_argument(
+        "-o", "--outdir", required=True, help="output directory for downlaoded images"
+    )
+    parser.add_argument(
+        "--image-or-video",
+        action="store_false",
+        help="include this flag if the exported CSV contains data from image or video datasets (not geospatial).",
+    )
+
+    args = parser.parse_args()
+
+    main(args)
