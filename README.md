@@ -1,3 +1,5 @@
+# THIS IS A PUBLIC REPOSITORY
+
 # Use
 
 The script to download imagery from RAIC using a CSV export is provided:
