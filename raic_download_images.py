@@ -78,14 +78,14 @@ async def main(args: argparse.Namespace) -> int:
             ),
         )
     )
-    
+
     df["outfile"].apply(lambda x: os.makedirs(Path(x).parent, exist_ok=True))
 
     sess = ClientSession()
     res = await http_get_parallel(sess, df, SASkey)
     saved_csv = str(PurePath(outDir, "ref_" + Path(csvFile).stem + ".csv"))
     sess.close()
-    
+
     try:
         pd.DataFrame(res).to_csv(saved_csv)
     except:
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "-i", "--input", required=True, help="CSV file downloaded from RAIC portal"
+        "-i", "--input", required=True, help="CSV file exported from RAIC portal"
     )
     parser.add_argument(
         "-o", "--outdir", required=True, help="output directory for downlaoded images"
