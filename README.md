@@ -1,6 +1,6 @@
 # Purpose
 
-The script to download imagery from RAIC using a CSV export is provided:
+The script to download imagery from RAIC using a CSV export is provided in this repo:
 
 ```sh
 python raic_download_images.py -i <RAIC csv file name> -o <output directory> [--image-or-video]
