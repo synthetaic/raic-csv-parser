@@ -1,24 +1,21 @@
+import os
 import argparse
 import asyncio
 import csv
-import json
-import os
-import subprocess
-from itertools import repeat
 from pathlib import Path, PurePath
-from typing import Any, Dict, List, Tuple
+from typing import List
 from uuid import uuid4
 
 import pandas as pd
-import requests
 from aiohttp import ClientSession
 
 
-async def http_get_with_aiohttp(
+async def http_get(
     session: ClientSession,
     url: str,
+    outfilename: str,
     sas: str,
-    headers: Dict = {},
+    headers: dict = {},
     proxy: str = None,
     timeout: int = 10,
 ) -> bytes:
@@ -27,72 +24,76 @@ async def http_get_with_aiohttp(
         url=url + sas, headers=headers, proxy=proxy, timeout=timeout
     )
     content = None
+
+    out = {"url": url, "filename": None}
+
     try:
         content = await response.read()
+        with open(outfilename, "wb") as f:
+            f.write(content)
+        out["filename"] = outfilename
     except:
         pass
-    return content
+
+    return out
 
 
-async def http_get_with_aiohttp_parallel(
+async def http_get_parallel(
     session: ClientSession,
-    list_of_urls: List[str],
+    indf: pd.DataFrame,
     sas: str,
-    headers: Dict = {},
+    headers: dict = {},
     proxy: str = None,
     timeout: int = 10,
-) -> List[bytes]:
+) -> List[dict]:
 
     results = await asyncio.gather(
         *[
-            http_get_with_aiohttp(session, url, sas, headers, proxy, timeout)
-            for url in list_of_urls
+            http_get(session, row.url, row.outfile, sas, headers, proxy, timeout)
+            for k, row in indf.iterrows()
         ]
     )
     return results
 
 
-def getSAASkey(csvFile: str) -> str:
+def getSASkey(csvFile: str) -> str:
     with open(csvFile, newline="") as f:
         reader = csv.reader(f)
-        SaaSkey = next(reader)[1]
-    return SaaSkey
+        SASkey = next(reader)[1]
+    return SASkey
 
 
-def main(args) -> None:
+async def main(args: argparse.Namespace) -> int:
     csvFile = args.input
     outDir = args.outdir
-    isImagery = args.image
+    isImagery = args.image_or_video
 
-    SASkey = getSAASkey(csvFile)
+    SASkey = getSASkey(csvFile)
     df = pd.read_csv(csvFile, skiprows=1)
+    df["outfile"] = df["url"].apply(
+        lambda x: PurePath(
+            outDir,
+            *list(
+                Path(x).parts[-4:] if not isImagery else str(uuid4()) + Path(x).suffix
+            ),
+        )
+    )
+    
+    df["outfile"].apply(lambda x: os.makedirs(Path(x).parent, exist_ok=True))
 
+    sess = ClientSession()
+    res = await http_get_parallel(sess, df, SASkey)
+    saved_csv = str(PurePath(outDir, "ref_" + Path(csvFile).stem + ".csv"))
+    sess.close()
+    
+    try:
+        pd.DataFrame(res).to_csv(saved_csv)
+    except:
+        print("Failed to save reference CSV")
+        return 1
 
-
-
-
-
-    for index, row in df.iterrows():
-        try:
-            file_path = os.path.join(outDir, str(row["category"]))
-            if not os.path.exists(file_path):
-                os.makedirs(file_path)
-            full_link = '"' + row["url"] + SASkey + '"'
-            processcmd = "azcopy cp " + full_link + " " + file_path
-            transfer = subprocess.call(processcmd, stderr=subprocess.STDOUT)
-            downloadedName = str(row["url"]).split("/")[
-                len(str(row["url"]).split("/")) - 1
-            ]
-            newName = "image_" + str(i) + ".jpg"
-            os.rename(
-                os.path.join(file_path, downloadedName),
-                os.path.join(file_path, newName),
-            )
-        except EOFError as error:
-            print("Error with SAS")
-        except Exception as e:
-            print(str(e) + "Unknown error has occured")
-        i += 1
+    print(f"Successfully saved csv to:\n{saved_csv}")
+    return 0
 
 
 if __name__ == "__main__":
@@ -106,10 +107,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--image-or-video",
-        action="store_false",
+        action="store_true",
         help="include this flag if the exported CSV contains data from image or video datasets (not geospatial).",
     )
 
     args = parser.parse_args()
 
-    main(args)
+    asyncio.run(main(args))
