@@ -1,3 +1,14 @@
+# raic_download_images.py
+#
+# Author: Brian D Goodwin; brian@synthetaic.com
+# Date: 2022-05-18
+#
+# Purpose: facilitate image downloads from data labels built via RAIC.
+#
+# Output: all files deposited in desired output folder and a reference
+#   dataframe saved as a CSV file, which ties the local filenames back
+#   to the original URL.
+
 import os
 import argparse
 import asyncio
@@ -84,12 +95,12 @@ async def main(args: argparse.Namespace) -> int:
     sess = ClientSession()
     res = await http_get_parallel(sess, df, SASkey)
     saved_csv = str(PurePath(outDir, "ref_" + Path(csvFile).stem + ".csv"))
-    sess.close()
+    await sess.close()
 
     try:
         pd.DataFrame(res).to_csv(saved_csv)
     except:
-        print("Failed to save reference CSV")
+        print("Failed to save reference CSV... ignoring...")
         return 1
 
     print(f"Successfully saved csv to:\n{saved_csv}")
