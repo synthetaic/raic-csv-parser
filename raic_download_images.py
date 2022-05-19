@@ -28,7 +28,7 @@ async def http_get(
     sas: str,
     headers: dict = {},
     proxy: str = None,
-    timeout: int = 10,
+    timeout: int = 5*60,
 ) -> bytes:
 
     response = await session.get(
@@ -55,7 +55,7 @@ async def http_get_parallel(
     sas: str,
     headers: dict = {},
     proxy: str = None,
-    timeout: int = 10,
+    timeout: int = 5*60,
 ) -> List[dict]:
 
     results = await asyncio.gather(
