@@ -85,7 +85,7 @@ async def main(args: argparse.Namespace) -> int:
         lambda x: PurePath(
             outDir,
             *list(
-                Path(x).parts[-4:] if not isImagery else str(uuid4()) + Path(x).suffix
+                Path(x).parts[-4:] if not isImagery else [str(uuid4()) + Path(x).suffix]
             ),
         )
     )
