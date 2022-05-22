@@ -29,7 +29,7 @@ async def http_get(
     headers: dict = {},
     proxy: str = None,
     timeout: int = 5*60,
-) -> bytes:
+) -> dict:
 
     response = await session.get(
         url=url + sas, headers=headers, proxy=proxy, timeout=timeout
