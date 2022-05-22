@@ -99,11 +99,11 @@ async def main(args: argparse.Namespace) -> int:
 
     try:
         pd.DataFrame(res).to_csv(saved_csv)
+        print(f"Successfully saved csv to:\n{saved_csv}")
     except:
         print("Failed to save reference CSV... ignoring...")
         return 1
-
-    print(f"Successfully saved csv to:\n{saved_csv}")
+    
     return 0
 
 
