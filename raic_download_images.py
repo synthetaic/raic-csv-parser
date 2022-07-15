@@ -74,6 +74,7 @@ async def main(args: argparse.Namespace) -> int:
     SASkey = f"?{args.saskey}"
 
     df = pd.read_csv(csvFile)
+    df["Url"] = df["Url"].astype(str)
     df["outfile"] = df["Url"].apply(
         lambda x: PurePath(
             outDir,
