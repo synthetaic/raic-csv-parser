@@ -28,7 +28,7 @@ async def http_get(
     sas: str,
     headers: dict = {},
     proxy: str = None,
-    timeout: int = 5*60,
+    timeout: int = 5 * 60,
 ) -> dict:
 
     response = await session.get(
@@ -55,31 +55,24 @@ async def http_get_parallel(
     sas: str,
     headers: dict = {},
     proxy: str = None,
-    timeout: int = 5*60,
+    timeout: int = 5 * 60,
 ) -> List[dict]:
 
     results = await asyncio.gather(
         *[
-            http_get(session, row.url, row.outfile, sas, headers, proxy, timeout)
+            http_get(session, row.Url, row.outfile, headers, proxy, timeout)
             for k, row in indf.iterrows()
         ]
     )
     return results
 
 
-def getSASkey(csvFile: str) -> str:
-    with open(csvFile, newline="") as f:
-        reader = csv.reader(f)
-        SASkey = next(reader)[1]
-    return SASkey
-
-
 async def main(args: argparse.Namespace) -> int:
     csvFile = args.input
     outDir = args.outdir
     isImagery = args.image_or_video
+    SASkey = "?" + args.saskey
 
-    SASkey = getSASkey(csvFile)
     df = pd.read_csv(csvFile, skiprows=1)
     df["outfile"] = df["url"].apply(
         lambda x: PurePath(
@@ -103,7 +96,7 @@ async def main(args: argparse.Namespace) -> int:
     except:
         print("Failed to save reference CSV... ignoring...")
         return 1
-    
+
     return 0
 
 
@@ -115,6 +108,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-o", "--outdir", required=True, help="output directory for downlaoded images"
+    )
+    parser.add_argument(
+        "-s",
+        "--saskey",
+        required=True,
+        help="SAS Key to access imagery (without the '?')",
     )
     parser.add_argument(
         "--image-or-video",
