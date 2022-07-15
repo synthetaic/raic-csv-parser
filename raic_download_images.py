@@ -60,7 +60,7 @@ async def http_get_parallel(
 
     results = await asyncio.gather(
         *[
-            http_get(session, row.Url, row.outfile, headers, proxy, timeout)
+            http_get(session, row.Url, row.outfile, sas, headers, proxy, timeout)
             for k, row in indf.iterrows()
         ]
     )
@@ -71,9 +71,9 @@ async def main(args: argparse.Namespace) -> int:
     csvFile = args.input
     outDir = args.outdir
     isImagery = args.image_or_video
-    SASkey = "?" + args.saskey
+    SASkey = f"?{args.saskey}"
 
-    df = pd.read_csv(csvFile, skiprows=1)
+    df = pd.read_csv(csvFile)
     df["outfile"] = df["Url"].apply(
         lambda x: PurePath(
             outDir,
