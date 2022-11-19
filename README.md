@@ -14,13 +14,13 @@ python raic_download_images.py -i <RAIC csv file name> -o <output directory>
 
 `--crops-only` flag, if present, indicates that only the detected crops should be downloaded.
 
-## Deps
+# Deps
 
 This script was tested using python3.8.
 
 Your python invironment requires that the packages in `requirements.txt` be installed (e.g., `pip install -r ./requirements.txt`).
 
-## Example usage
+# Example usage
 
 ```sh
 python raic_download_images.py --input ./data/4f3e7f32-4aba-449d-a277-e23fab876a0f_categories_18-11-22.csv --outdir /local/folder/crops --crops-only
