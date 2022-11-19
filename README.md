@@ -25,22 +25,3 @@ Your python invironment requires that the packages in `requirements.txt` be inst
 ```sh
 python raic_download_images.py --input ./data/4f3e7f32-4aba-449d-a277-e23fab876a0f_categories_18-11-22.csv --outdir /local/folder/crops --crops-only
 ```
-
-## Docker environment setup
-
-Build the docker image:
-
-```sh
-docker build -t raiccsv:v1 .
-```
-
-The following command can be run right from the terminal. This command is setup such that your __input CSV file path__ and __output directory__ are `/full/path/to/categories_raic_csvfile.csv` and `/full/path/to/output/directory`, respectively. (The `--image-or-video` flag should be included if the exported CSV comes from either video data or imagery data; i.e., _not_ geospatial/map imagery.)
-
-```sh
-docker run \
-    -v /full/path/to/categories_raic_csvfile.csv:/root/input.csv \
-    -v /full/path/to/output/directory:/root/data \
-    raiccsv:v1 \
-    python /root/raic_download_images.py -i /root/input.csv -o /root/data 
-```
-
